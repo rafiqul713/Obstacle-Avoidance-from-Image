@@ -28,6 +28,40 @@ int num_grid = 3; // (3X3)
 #define UP (MIDDLE - num_grid)
 #define DOWN (MIDDLE + num_grid)
 
+
+class Coordinates{
+    public:
+        int x,y,w,h, pixel_counter;
+        string direction;
+        Coordinates(int x,int y,int w,int h,string direction, int pixel_counter){
+            this->x=x;
+            this->y=y;
+            this->w=w;
+            this->h=h;
+            this->direction=direction;
+            this->pixel_counter=pixel_counter;
+        }
+
+        bool operator<(const Coordinates &a)const {
+            return pixel_counter < a.pixel_counter; // sort accessing order based on pixel counter
+                                                    // higher pixel counter means lesser probability of obstacle
+                                                    // lower pixel counter means higher probability of obstacle
+        }
+
+        void display(){
+            cout<<"-----------------------------------"<<endl;
+            cout<<"Direction-> "<<this->direction<<endl;
+            cout<<"X-> "<<this->x<<endl;
+            cout<<"Y-> "<<this->y<<endl;
+            cout<<"Width-> "<<this->w<<endl;
+            cout<<"Height-> "<<this->h<<endl;
+            cout<<"Pixel counter-> "<<this->pixel_counter<<endl;
+            cout<<"-----------------------------------"<<endl;
+ 
+        }
+};
+
+
 const char* keyword = "{image i |<none>| input image   }";
 
 int main(int argc, char** argv)
@@ -50,10 +84,11 @@ int main(int argc, char** argv)
         int GRID_SIZE_WIDTH = width / num_grid;
         int GRID_SIZE_HEIGHT = height / num_grid;
         vector<Rect> grid;
+        vector<Coordinates>coordinates;
 
         for (int y = 0; y < height - GRID_SIZE_HEIGHT; y += GRID_SIZE_HEIGHT) {
             for (int x = 0; x < width - GRID_SIZE_WIDTH; x += GRID_SIZE_WIDTH) {
-                int k = x * y + x;
+                //int k = x * y + x;
                 Rect grid_rect(x, y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT);
                 cout << grid_rect << endl;
                 grid.push_back(grid_rect);
@@ -68,41 +103,46 @@ int main(int argc, char** argv)
         int predefined_direction[5] = { MIDDLE, RIGHT, LEFT, UP, DOWN };
         string dir[5] = { "Middle", "Right", "Left", "Up", "Down" };
         Mat org_grey;
-        cvtColor(image, org_grey, CV_BGR2GRAY);
+        cvtColor(image, org_grey, CV_BGR2GRAY); //Convert to greyscale
         //org_grey.convertTo(org_grey, CV_8U, 255.0);
         imshow("Original image ", org_grey);
-        float THRESHOLD = 100;
-        int counter;
+        float THRESHOLD = 100; //0=black/obstacle 255=white/no obstacle
+        int counter; //number of pixel inside the grid that are greater than the threshold
 
         for (int direction = 0; direction < 5; direction++) {
             Mat cropped = image(Rect(grid[predefined_direction[direction]].x, grid[predefined_direction[direction]].y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT));
             counter = 0;
-            Mat grey2; //=Mat::zeros(cropped.cols,cropped.rows, CV_8U CV_64F);
             cvtColor(cropped, grey, CV_BGR2GRAY, 255.0);
-            grey.convertTo(grey2, CV_8UC1);
-            imshow("Here", grey2);
-            float max = -999999.0;
-            float min = 999999.0;
+            grey.convertTo(grey, CV_8UC1); // convert pixel value between 0 and 255
+            imshow("Converted greyscale", grey);
+            float max = -999999.0; //maximum pixel value inside the grid
+            float min = 999999.0; // minimum pixel value inside the grid
             for (int i = 0; i < cropped.rows; i++) {
                 for (int j = 0; j < cropped.cols; j++) {
-                    //cout<<cropped.at<float>(i,j)<<endl;
-                    if ((grey2.at<uchar>(i, j)) > THRESHOLD) {
-                        cout << "Pixel " << grey2.at<float>(i, j) << " = " << grey.at<float>(i, j) << endl;
+                    if ((grey.at<uchar>(i, j)) > THRESHOLD) {
                         counter++;
                     }
-                    if ((grey2.at<uchar>(i, j)) > max) {
-                        max = grey2.at<uchar>(i, j);
+                    if ((grey.at<uchar>(i, j)) > max) {
+                        max = grey.at<uchar>(i, j);
                     }
-                    if ((grey2.at<uchar>(i, j)) < min) {
-                        min = grey2.at<uchar>(i, j);
+                    if ((grey.at<uchar>(i, j)) < min) {
+                        min = grey.at<uchar>(i, j);
                     }
                 }
             }
             cout << dir[direction] << " # of pixels greater than threshold " << counter << " Max " << max << " Min " << min << endl;
+            coordinates.push_back(Coordinates(grid[predefined_direction[direction]].x, grid[predefined_direction[direction]].y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT, dir[direction], counter));
+            //coordinates[direction].display();
             imshow("Grayscale", grey);
 
             //imshow(dir[direction],cropped);
             waitKey();
+        }
+
+        //Test
+        sort(coordinates.begin(),coordinates.end());
+        for(int i=0;i<coordinates.size();i++){
+            coordinates[i].display();
         }
     }
     else {
