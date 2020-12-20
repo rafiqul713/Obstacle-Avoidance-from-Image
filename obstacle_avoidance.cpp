@@ -22,7 +22,7 @@ int num_grid = 3; // (3X3)
     6  7  8  
 */
 
-#define MIDDLE 4 //(num_grid/2)
+#define MIDDLE 4 //floor((num_grid*num_grid)/2)
 #define RIGHT (MIDDLE + 1)
 #define LEFT (MIDDLE - 1)
 #define UP (MIDDLE - num_grid)
@@ -72,12 +72,12 @@ public:
         int GRID_SIZE_HEIGHT = height / num_grid;
         vector<Rect> grid;
         Mat grey;
-        vector<Coordinates> coordinates;
+        vector<Coordinates> coordinates; //store coordinates and direction of the grid
         for (int y = 0; y < height - GRID_SIZE_HEIGHT; y += GRID_SIZE_HEIGHT) {
             for (int x = 0; x < width - GRID_SIZE_WIDTH; x += GRID_SIZE_WIDTH) {
                 Rect grid_rect(x, y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT);
                 cout << grid_rect << endl;
-                grid.push_back(grid_rect);
+                grid.push_back(grid_rect); //store x1,y1, width, height of each grid
             }
         }
         int predefined_direction[5] = { MIDDLE, RIGHT, LEFT, UP, DOWN };
@@ -90,6 +90,7 @@ public:
         int counter; //number of pixel inside the grid that are greater than the threshold
 
         for (int direction = 0; direction < 5; direction++) {
+            //at a time crop each directional part (middle, left, right, up, down) of the image
             Mat cropped = image(Rect(grid[predefined_direction[direction]].x, grid[predefined_direction[direction]].y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT));
             counter = 0;
             cvtColor(cropped, grey, CV_BGR2GRAY, 255.0);
@@ -100,7 +101,7 @@ public:
             for (int i = 0; i < cropped.rows; i++) {
                 for (int j = 0; j < cropped.cols; j++) {
                     if ((grey.at<uchar>(i, j)) > THRESHOLD) {
-                        counter++;
+                        counter++; // count the number of pixel those are greater than theshold
                     }
                     if ((grey.at<uchar>(i, j)) > max) {
                         max = grey.at<uchar>(i, j);
@@ -111,21 +112,33 @@ public:
                 }
             }
             cout << dir[direction] << " # of pixels greater than threshold " << counter << " Max " << max << " Min " << min << endl;
+            //store each of the directional part of the image
             coordinates.push_back(Coordinates(grid[predefined_direction[direction]].x, grid[predefined_direction[direction]].y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT, dir[direction], counter));
             //coordinates[direction].display();
            
         }
 
-        sort(coordinates.begin(), coordinates.end());
+        sort(coordinates.begin(), coordinates.end()); // sort accending order
         
         for(int i=0;i<coordinates.size();i++){
             coordinates[i].display();
         }
         
+        //consider only one directional part those have brghter the most number of brighter pixel or obstacle free path
         Rect r = Rect(coordinates[coordinates.size() - 1].x, coordinates[coordinates.size() - 1].y, coordinates[coordinates.size() - 1].w, coordinates[coordinates.size() - 1].h);
         rectangle(image, r, Scalar(0, 0, 255), 2);
         imshow("Obstacle free grid", image);
         waitKey();
+    }
+
+    void approach2(Mat image)
+    {   
+        int num_of_grid=10;
+        int width= image.cols;
+        int height= image.rows;
+        int GRID_SIZE_WIDTH = width / num_of_grid; 
+        int GRID_SIZE_HEIGHT = height / num_of_grid;
+
     }
 };
 
