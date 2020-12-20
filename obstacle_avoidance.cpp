@@ -62,6 +62,25 @@ public:
     }
 };
 
+
+class ObjectiveFunction {
+    public:
+        float obstacle_distance() {
+            return 0;
+        }
+        float smooth_trajectory() {
+            return 0;
+        }
+
+        float maintain_the_same_height() {
+            return 0;
+        }
+
+        float towards_the target_orientation() {
+            return 0;
+        }
+};
+
 class ObstacleAvoidanceApproach {
 public:
     void approach1(Mat image)
