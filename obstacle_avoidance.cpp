@@ -136,8 +136,19 @@ public:
         int num_of_grid=10;
         int width= image.cols;
         int height= image.rows;
+        vector<Rect>grid;
         int GRID_SIZE_WIDTH = width / num_of_grid; 
         int GRID_SIZE_HEIGHT = height / num_of_grid;
+        int index_of_midl_grid= (num_of_grid*num_of_grid)/2; // For example: if image is divided into 10X10 grid then 50th position is the middle
+        for (int y = 0; y < height - GRID_SIZE_HEIGHT; y += GRID_SIZE_HEIGHT) {
+            for (int x = 0; x < width - GRID_SIZE_WIDTH; x += GRID_SIZE_WIDTH) {
+                Rect grid_rect(x, y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT);
+                cout << grid_rect << endl;
+                grid.push_back(grid_rect); //store x1,y1, width, height of each grid
+            }
+        }
+
+        // apply kernel over the grid 
 
     }
 };
@@ -161,15 +172,18 @@ int main(int argc, char** argv)
 
         if (parser.has("approach")){
             string apprch= parser.get<String>("approach");
-            if(apprch.compare("1")){
+            if(apprch=="1"){
                 approach.approach1(image);    
+            }
+            else if(apprch=="2"){
+                approach.approach2(image);    
             }
             else{
                 approach.approach1(image); //default
             }
         }
         else {
-            approach.approach1(image); //default approach
+            cout<<"Provide approach number. For example: --approach=1"<<endl;
             
         }
     }
