@@ -12,6 +12,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <cmath>
+#include <ctime>
 using namespace cv;
 using namespace std;
 
@@ -76,7 +78,7 @@ class ObjectiveFunction {
             return 0;
         }
 
-        float towards_the target_orientation() {
+        float towards_the_target_orientation() {
             return 0;
         }
 };
@@ -152,22 +154,44 @@ public:
 
     void approach2(Mat image)
     {   
-        int num_of_grid=10;
+        int num_of_grid=15;
         int width= image.cols;
         int height= image.rows;
-        vector<Rect>grid;
-        int GRID_SIZE_WIDTH = width / num_of_grid; 
-        int GRID_SIZE_HEIGHT = height / num_of_grid;
-        int index_of_midl_grid= (num_of_grid*num_of_grid)/2; // For example: if image is divided into 10X10 grid then 50th position is the middle
-        for (int y = 0; y < height - GRID_SIZE_HEIGHT; y += GRID_SIZE_HEIGHT) {
-            for (int x = 0; x < width - GRID_SIZE_WIDTH; x += GRID_SIZE_WIDTH) {
-                Rect grid_rect(x, y, GRID_SIZE_WIDTH, GRID_SIZE_HEIGHT);
-                cout << grid_rect << endl;
-                grid.push_back(grid_rect); //store x1,y1, width, height of each grid
+        bool optimization=false;
+
+        //divide the image with even number of grid 
+        if(!optimization){
+            if(width%num_of_grid!=0) {
+                for(int i=1;i<width;i++){
+                    if(width%(num_of_grid+i)==0){
+                        num_of_grid+=i;
+                        break;
+                    }
+                }
             }
         }
+        
+        vector<Rect>grid;
+        int GRID_SIZE_WIDTH = floor(width / num_of_grid); 
+        int GRID_SIZE_HEIGHT = floor(height / num_of_grid);
+        int candidate=0;
+        //int horizontal_line=(floor(num_of_grid/2)-1)*GRID_SIZE_HEIGHT;
+        int horizontal_line=((height/2)-GRID_SIZE_HEIGHT*2);
+        for(int y=horizontal_line;y<horizontal_line+(GRID_SIZE_HEIGHT*3);y+=GRID_SIZE_HEIGHT) {
+            for(int x=0;x<width-GRID_SIZE_WIDTH*2;x+=GRID_SIZE_WIDTH) {
+                Rect kernel(x, y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3);
+                rectangle(image, kernel, Scalar(0, 255, 0), 1);
+                imshow("Image", image);
+                candidate++;
+                waitKey(500);
+            }
+        }
+        
+        cout<<"Number of candidates "<<candidate<<endl;
 
-        // apply kernel over the grid 
+
+
+
 
     }
 };
@@ -180,6 +204,8 @@ int main(int argc, char** argv)
     ObstacleAvoidanceApproach approach;
     Mat image;
     String image_path;
+    timespec ts_beg, ts_end;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts_beg);
     if (parser.has("image")) {
         image_path = parser.get<String>("image");
         cout << "Image path " << image_path << endl;
@@ -210,6 +236,7 @@ int main(int argc, char** argv)
     else {
         cout << "Wrong command" << endl;
     }
-
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts_end);
+    cout << (ts_end.tv_sec - ts_beg.tv_sec) + (ts_end.tv_nsec - ts_beg.tv_nsec) / 1e9 << " sec"<<endl;
     return 0;
 }
