@@ -65,26 +65,162 @@ public:
 };
 
 
+
+
+
+class CandidateAttribute {
+public:
+    int x, y, w, h;
+    float total_cost;
+    CandidateAttribute(int x, int y, int w, int h, float total_cost)
+    {
+        this->x = x;
+        this->y = y;
+        this->w = w;
+        this->h = h;
+        this->total_cost = total_cost;
+    }
+
+    bool operator<(const CandidateAttribute& a) const {
+        return total_cost < a.total_cost; 
+    }
+
+    
+};
+
+
+
+
 class ObjectiveFunction {
     public:
-        float obstacle_distance() {
-            return 0;
+        int W1,W2,W3,W4;
+        ObjectiveFunction() {
+            // initialize weight factor
+            W1=1.0;
+            W2=1.0;
+            W3=1.0;
+            W4=1.0;
         }
-        float smooth_trajectory() {
+        float obstacle_distance_cost(Mat cropped_img) {
+            int width,height;
+            width=cropped_img.cols;
+            height=cropped_img.rows;
+            int obs_dist_cost=0;
+            for (int y=0;y<height;y++){
+                for(int x= 0;x< width;x++){
+                    int pixel_value=cropped_img.at<uchar>(y,x);
+                    if(pixel_value>=0 && pixel_value<50) {
+                        obs_dist_cost+=4;
+                    }
+                    else if(pixel_value>=50 && pixel_value<100) {
+                        obs_dist_cost+=3;
+                    }
+                    else if(pixel_value>=100 && pixel_value<150) {
+                        obs_dist_cost+=2;
+                    }
+                    else if(pixel_value>=150 && pixel_value<200) {
+                        obs_dist_cost+=1;
+                    }
+                    else if(pixel_value>=200 && pixel_value<=255) {
+                        obs_dist_cost+=0;
+                    }
+                }
+            }
+            return W1*(float(obs_dist_cost/float(cropped_img.cols*cropped_img.rows)));
+        }
+        float smooth_trajectory_cost(int crnt_x1,int crnt_y1,int crnt_w, int crnt_h,
+            int prev_x1,int prev_y1,int prev_w, int prev_h) {
+            float smth_traj_cost=0.0;
+
+            int crnt_x2,crnt_y2,prev_x2,prev_y2;
+            crnt_x2=crnt_x1+crnt_w;
+            crnt_y2=crnt_y1+crnt_h;
+            prev_x2=prev_x1+prev_w;
+            prev_y2=prev_y1+prev_h;
+
+            // X1 coordinates
+            if(abs(crnt_x1-prev_x1)<=5) {
+                smth_traj_cost+=0;
+            }
+            else if(abs(crnt_x1-prev_x1)>5 && 10<=abs(crnt_x1-prev_x1)) {
+                smth_traj_cost+=2;
+            }
+
+            else if(abs(crnt_x1-prev_x1)>10 && 15<=abs(crnt_x1-prev_x1)) {
+                smth_traj_cost+=3;
+            }
+            else {
+                smth_traj_cost+=4;
+            }
+
+            // Y1 coordinates
+            if(abs(crnt_y1-prev_y1)<=5) {
+                smth_traj_cost+=0;
+            }
+
+            else if(abs(crnt_y1-prev_y1)>5 && 10<=abs(crnt_y1-prev_y1)) {
+                smth_traj_cost+=2;
+            }
+
+            else if(abs(crnt_y1-prev_y1)>10 && 15<=abs(crnt_y1-prev_y1)) {
+                smth_traj_cost+=3;
+            }
+
+            else {
+                smth_traj_cost+=4;
+            }
+
+            // X2 coordinates
+            if(abs(crnt_x2-prev_x2)<=5) {
+                smth_traj_cost+=0;
+            }
+
+            else if(abs(crnt_x2-prev_x2)>5 && 10<=abs(crnt_x2-prev_x2)) {
+                smth_traj_cost+=2;
+            }
+
+            else if(abs(crnt_x2-prev_x2)>10 && 15<=abs(crnt_x2-prev_x2)) {
+                smth_traj_cost+=3;
+            }
+
+            else {
+                smth_traj_cost+=4;
+            }
+
+
+            // Y2 coordinates
+            if(abs(crnt_y2-prev_y2)<=5) {
+                smth_traj_cost+=0;
+            }
+            
+            else if(abs(crnt_y2-prev_y2)>5 && 10<=abs(crnt_y2-prev_y2)) {
+                smth_traj_cost+=2;
+            }
+
+            else if(abs(crnt_y2-prev_y2)>10 && 15<=abs(crnt_y2-prev_y2)) {
+                smth_traj_cost+=3;
+            }
+
+            else  {
+                smth_traj_cost+=4;
+            }
+
+
+            return W2*(smth_traj_cost/4.0);
+        }
+
+        float maintain_the_same_height_cost() {
             return 0;
         }
 
-        float maintain_the_same_height() {
-            return 0;
-        }
-
-        float towards_the_target_orientation() {
+        float towards_the_target_orientation_cost() {
             return 0;
         }
 };
 
 class ObstacleAvoidanceApproach {
 public:
+    
     void approach1(Mat image)
     {
         int width = image.cols;
@@ -152,12 +288,16 @@ public:
         waitKey();
     }
 
+    
+    
+    
     void approach2(Mat image)
     {   
-        int num_of_grid=15;
+        int num_of_grid=10;
         int width= image.cols;
         int height= image.rows;
         bool optimization=false;
+        ObjectiveFunction obj_f;
 
         //divide the image with even number of grid 
         if(!optimization){
@@ -177,22 +317,38 @@ public:
         int candidate=0;
         //int horizontal_line=(floor(num_of_grid/2)-1)*GRID_SIZE_HEIGHT;
         int horizontal_line=((height/2)-GRID_SIZE_HEIGHT*2);
+        vector<CandidateAttribute>candidates;
         for(int y=horizontal_line;y<horizontal_line+(GRID_SIZE_HEIGHT*3);y+=GRID_SIZE_HEIGHT) {
             for(int x=0;x<width-GRID_SIZE_WIDTH*2;x+=GRID_SIZE_WIDTH) {
                 Rect kernel(x, y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3);
-                rectangle(image, kernel, Scalar(0, 255, 0), 1);
-                imshow("Image", image);
+                //rectangle(image, kernel, Scalar(0, 255, 0), 1);
+                Mat cropped = image(Rect(x, y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3));            
+                float obs_dist_cost=obj_f.obstacle_distance_cost(cropped);
+                
+                // demo coordinates for smoothness trajectory
+                // issue need to solve: test for multiple frames and store the previous candidate's coordinates
+
+                int prev_x1,prev_y1,prev_w,prev_h;
+                prev_x1=x+10;//x;
+                prev_y1=y+10;//y;
+                prev_w=GRID_SIZE_WIDTH*3;
+                prev_h=GRID_SIZE_HEIGHT*3;
+                float smth_traj_cost=obj_f.smooth_trajectory_cost(x,y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3,prev_x1,prev_y1,
+                prev_w,prev_h);
+                cout<<"Obtacle distance cost "<<obs_dist_cost<<endl;
+                cout<<"Smooth trajectory cost "<<smth_traj_cost<<endl;
+                candidates.push_back(CandidateAttribute(x,y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3,obs_dist_cost+smth_traj_cost));
                 candidate++;
-                waitKey(500);
+                //waitKey(500);
             }
+            sort(candidates.begin(),candidates.end());
         }
-        
+        Rect r = Rect(candidates[0].x, candidates[0].y,candidates[0].w, candidates[0].h);
+        cout<<"Least cost "<<candidates[0].total_cost<<" Most cost "<<candidates[candidates.size()-1].total_cost<<endl;
+        rectangle(image, r, Scalar(0, 0, 255), 2);
+        imshow("Obstacle free grid", image);
+        waitKey();
         cout<<"Number of candidates "<<candidate<<endl;
-
-
-
-
-
     }
 };
 
