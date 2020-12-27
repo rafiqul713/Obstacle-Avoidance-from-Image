@@ -101,6 +101,7 @@ class ObjectiveFunction {
             W3=1.0;
             W4=1.0;
         }
+        
         float obstacle_distance_cost(Mat cropped_img) {
             int width,height;
             width=cropped_img.cols;
@@ -299,7 +300,7 @@ public:
         bool optimization=false;
         ObjectiveFunction obj_f;
 
-        //divide the image with even number of grid 
+        //divide grid evenly 
         if(!optimization){
             if(width%num_of_grid!=0) {
                 for(int i=1;i<width;i++){
@@ -312,15 +313,17 @@ public:
         }
         
         vector<Rect>grid;
+        // each grid width and height
         int GRID_SIZE_WIDTH = floor(width / num_of_grid); 
         int GRID_SIZE_HEIGHT = floor(height / num_of_grid);
         int candidate=0;
         //int horizontal_line=(floor(num_of_grid/2)-1)*GRID_SIZE_HEIGHT;
+        // search region in the horizontal location 
         int horizontal_line=((height/2)-GRID_SIZE_HEIGHT*2);
         vector<CandidateAttribute>candidates;
         for(int y=horizontal_line;y<horizontal_line+(GRID_SIZE_HEIGHT*3);y+=GRID_SIZE_HEIGHT) {
             for(int x=0;x<width-GRID_SIZE_WIDTH*2;x+=GRID_SIZE_WIDTH) {
-                Rect kernel(x, y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3);
+                Rect kernel(x, y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3); // define kernel 
                 //rectangle(image, kernel, Scalar(0, 255, 0), 1);
                 Mat cropped = image(Rect(x, y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3));            
                 float obs_dist_cost=obj_f.obstacle_distance_cost(cropped);
