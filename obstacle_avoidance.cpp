@@ -99,8 +99,8 @@ class ObjectiveFunction {
         ObjectiveFunction() {
             // initialize weight factor
             W1=1.0; // control obstacle distance cost
-            W2=1.0; // control smooth trajectory cost
-            W3=1.0;
+            W2=2.0; // control smooth trajectory cost
+            W3=1.0; // maintain same height
             W4=1.0;
         }
         
@@ -225,8 +225,36 @@ class ObjectiveFunction {
 
         }
 
-        float maintain_the_same_height_cost() {
-            return 0;
+        float maintain_the_same_height_cost(int crnt_x1,int crnt_y1,int crnt_w, int crnt_h,
+            int prev_x1,int prev_y1,int prev_w, int prev_h) {
+            int height_cost=0.0;
+            int crnt_x2,crnt_y2,prev_x2,prev_y2;
+            int H;
+            H= max(crnt_h,prev_h)/3; // grid height
+            crnt_x2=crnt_x1+crnt_w;
+            crnt_y2=crnt_y1+crnt_h;
+            prev_x2=prev_x1+prev_w;
+            prev_y2=prev_y1+prev_h;
+            // previous frame center point
+            //int prev_x_center=(prev_x1+prev_x2)/2.0;
+            int prev_y_center= (prev_y1+prev_y2)/2.0;
+            // current frame center point
+            //int crnt_x_center= (crnt_x1+crnt_x2)/2.0;
+            int crnt_y_center= (crnt_y1+crnt_y2)/2.0;
+
+            if(abs(prev_y_center-crnt_y_center)>=0 && abs(prev_y_center-crnt_y_center)<H) {
+                height_cost+=0.0;
+            }
+            else if(abs(prev_y_center-crnt_y_center)>=H && abs(prev_y_center-crnt_y_center)<2*H) {
+                height_cost+=2.0;
+            }
+
+            else if(abs(prev_y_center-crnt_y_center)>=2*H && abs(prev_y_center-crnt_y_center)<5*H) {
+                height_cost+=4.0;
+            }
+
+            return W3*height_cost;
+            
         }
 
         float towards_the_target_orientation_cost() {
@@ -313,8 +341,6 @@ public:
         this->prev_x1=192;
         this->prev_y1=192;
         Mat img;
-        //VideoCapture cap("/home/rafiqul/Documents/Thesis/Code/GitHub/masters_thesis/Obstacle-Avoidance-from-Image/sequential/%02d.jpg");
-        //VideoCapture cap(0);
         String folder="/home/rafiqul/Documents/Thesis/Experiment/DepthImage/depth/*.jpg";
         vector<cv::String>images;
         cv::glob(folder, images, false);
@@ -326,20 +352,14 @@ public:
             
         }
         
-        /*while(cap.isOpened()) {
-            cap>>img;
-            cout<<img.size().width<<endl;
-            cout<<img.size().height<<endl;
-            imshow("Image ",img);
-            waitKey(1000);
-        }*/
+        
     }
     
     void approach2(Mat image,int prev_x1,int prev_y1, int frame_no)
     {   
         int prev_w;
         int prev_h;
-        int num_of_grid=10;
+        int num_of_grid=30;
         int width= image.cols;
         int height= image.rows;
         bool optimization=false;
@@ -385,16 +405,19 @@ public:
                 float obs_dist_cost=obj_f.obstacle_distance_cost(cropped);
                 float smth_traj_cost=obj_f.smooth_trajectory_cost(x,y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3,prev_x1,prev_y1,
                 prev_w,prev_h);
+                float height_cost=obj_f.maintain_the_same_height_cost(x,y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3,prev_x1,prev_y1,
+                prev_w,prev_h);
                 cout<<"---------------------------"<<endl;
                 //cout<<"x "<<x<<" y "<<y<<endl;
                 cout<<"prev x y "<<prev_x1<<" "<<prev_y1<<endl; 
                 cout<<"curr x y "<<x<<" "<<y<<endl; 
                 cout<<"Dist cost "<<obs_dist_cost<<endl;
                 cout<<"Smooth cost "<<smth_traj_cost<<endl;
+                cout<<"Height cost "<<height_cost<<endl;
                 cout<<"Total cost "<<(obs_dist_cost+smth_traj_cost)<<endl;
                 cout<<"---------------------------"<<endl;
                 //cout<<"Obs dist "<<obs_dist_cost<<" Smoothness "<<smth_traj_cost<<" Total "<<obs_dist_cost+smth_traj_cost<<endl;
-                candidates.push_back(CandidateAttribute(x,y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3,obs_dist_cost+smth_traj_cost));
+                candidates.push_back(CandidateAttribute(x,y,GRID_SIZE_WIDTH*3,GRID_SIZE_HEIGHT*3,obs_dist_cost+smth_traj_cost+height_cost));
                 //candidate++;
                 //waitKey();
                 //waitKey(500);
@@ -410,12 +433,12 @@ public:
         rectangle(image, r, Scalar(0, 0, 255), 2);
         std::ostringstream ss;
         ss << frame_no;
-        string file_save="/home/rafiqul/Documents/Thesis/Code/GitHub/masters_thesis/Obstacle-Avoidance-from-Image/exp1/"+ss.str()+".jpg";
+        string file_save="/home/rafiqul/Documents/Thesis/Code/GitHub/masters_thesis/Obstacle-Avoidance-from-Image/exp2/"+ss.str()+"with_cost.jpg";
         imwrite(file_save,image);
         //imshow("Obstacle free grid", image);
-        hconcat(image3,image,image3);
-        imshow("Compare",image3);
-        waitKey();
+        //hconcat(image3,image,image3);
+        //imshow("Compare",image3);
+        //waitKey();
         cout<<"Number of candidates "<<candidate<<endl;
     }
 };
