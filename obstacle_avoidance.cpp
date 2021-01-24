@@ -150,10 +150,6 @@ class ObjectiveFunction {
             prev_x2=prev_x1+prev_w;
             prev_y2=prev_y1+prev_h;
 
-            //cout<<"---------------------------------------------------------------------------"<<endl;
-            //cout<<"Current x1 "<<crnt_x1<<" y1 "<<crnt_y1<<" x2 "<<crnt_x2<<" y2 "<<crnt_x2<<endl;
-            //cout<<"Previous  X1 "<<prev_x1<<" Y1 "<<prev_y1<<" X2 "<<prev_x2<<" Y2 "<<prev_x2<<endl;
-            // X1 coordinates
             if(abs(crnt_x1-prev_x1)<=W) {
                 smth_traj_cost+=0;
             }
@@ -341,7 +337,7 @@ public:
         this->prev_x1=192;
         this->prev_y1=192;
         Mat img;
-        String folder="/home/rafiqul/Documents/Thesis/Experiment/DepthImage/depth/*.jpg";
+        String folder="/home/rafiqul/depth/*.jpg";
         vector<cv::String>images;
         cv::glob(folder, images, false);
         
@@ -433,7 +429,7 @@ public:
         rectangle(image, r, Scalar(0, 0, 255), 2);
         std::ostringstream ss;
         ss << frame_no;
-        string file_save="/home/rafiqul/Documents/Thesis/Code/GitHub/masters_thesis/Obstacle-Avoidance-from-Image/exp2/"+ss.str()+"with_cost.jpg";
+        string file_save="/home/rafiqul/Documents/Obstacle-Avoidance-from-Image/exp2/"+ss.str()+"with_cost.jpg";
         imwrite(file_save,image);
         //imshow("Obstacle free grid", image);
         //hconcat(image3,image,image3);
